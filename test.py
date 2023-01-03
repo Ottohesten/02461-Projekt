@@ -1,6 +1,23 @@
-for x in range(10):
-    print(x)
+from SnakeGame import SnakeGame
+
+
+
+if __name__ == '__main__':
+    game = SnakeGame()
     
-    
-x = "test"
-y = "test2"
+    # game loop
+    while True:
+        game_over, score = game.play_step()
+        
+        if game_over == True:
+            break
+        
+    print('Final Score', score)
+        
+        
+
+
+
+
+
+
