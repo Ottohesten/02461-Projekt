@@ -1,22 +1,27 @@
-from SnakeGame import SnakeGame
+from SnakeGameClass import SnakeGame, Direction
 
 
 
-if __name__ == '__main__':
-    game = SnakeGame()
+# if __name__ == '__main__':
+    # game = SnakeGame()
     
-    # game loop
-    while True:
-        game_over, score = game.play_step()
-        
-        if game_over == True:
-            break
-        
-    print('Final Score', score)
+    # # game loop
+    # while True:
+    #     game.step(Direction.DOWN)
         
         
+    # print('Final Score', score)
+        
+        
+    # pygame.quit() 
+
+clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
+print(clock_wise.index(Direction.LEFT))
+
+# pause = False
 
 
+# print()
 
 
 
