@@ -31,7 +31,7 @@ class Board:
             board[x, y] = 1
         return board
         
-    def get_available_space(self):
+    def get_available_space(self): #TODO Return the available space for all 3 actions
         pass
         
     
@@ -53,4 +53,8 @@ print(board)
 
 
 # print(game.snake)
+
+
+
+# TODO implement snake class
 
