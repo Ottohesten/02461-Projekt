@@ -56,5 +56,5 @@ class Board:
 
 
 
-# TODO implement snake class
+# TODO implement snake class to be played with
 

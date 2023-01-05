@@ -64,40 +64,6 @@ class SnakeGame:
         self.food = Point(x, y)
         if self.food in self.snake:
             self.place_food()
-            
-    # def step(self, action):
-    #     self.frame_iteration += 1
-    #     # 1. collect user input
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.QUIT:
-    #             pygame.quit()
-    #             quit()
-        
-    #     # 2. move
-    #     self.move(action) # update the head
-    #     self.snake.insert(0, self.head)
-        
-    #     # 3. check if game over
-    #     reward = 0
-    #     game_over = False
-    #     if self.is_collision() or self.frame_iteration > 100*len(self.snake):
-    #         game_over = True
-    #         reward = -10
-    #         return reward, game_over, self.score
-
-    #     # 4. place new food or just move
-    #     if self.head == self.food:
-    #         self.score += 1
-    #         reward = 10
-    #         self.place_food()
-    #     else:
-    #         self.snake.pop()
-        
-    #     # 5. update ui and clock
-    #     self.update_ui()
-    #     self.clock.tick(CLOCK_SPEED)
-    #     # 6. return game over and score
-    #     return reward, game_over, self.score
         
     def step(self, action=None, player_direction=None):
         self.frame_iteration += 1
@@ -129,16 +95,6 @@ class SnakeGame:
             pass
         if self.slow:
             self.clock.tick(10)
-        
-        
-        # if self.change_to == Direction.UP and self.direction != Direction.DOWN:
-        #     self.direction = Direction.UP
-        # if self.change_to == Direction.DOWN and self.direction != Direction.UP:
-        #     self.direction = Direction.DOWN
-        # if self.change_to == Direction.LEFT and self.direction != Direction.RIGHT:
-        #     self.direction = Direction.LEFT
-        # if self.change_to == Direction.RIGHT and self.direction != Direction.LEFT:
-        #     self.direction = Direction.RIGHT
         
 
         # 2. Move

@@ -3,6 +3,9 @@ import random
 from enum import Enum
 from collections import namedtuple
 
+# THIS FILE IS MEANT TO BE RAN FOR YOU TO PLAY THE SNAKE GAME
+
+
 pygame.init()
 font = pygame.font.SysFont('times new roman', 25)
 #font = pygame.font.SysFont('arial', 25)

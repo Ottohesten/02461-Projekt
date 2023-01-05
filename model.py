@@ -68,3 +68,7 @@ class QTrainer:
         loss.backward()
 
         self.optimizer.step()
+
+        
+
+# TODO look at ways to change the model, and maybe make other model to implement looking in the 4 directions instead of STRAIGHT LEFT RIGHT
