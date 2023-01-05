@@ -66,6 +66,7 @@ class Agent:
             game.food.y > game.head.y  # food down
             ]
 
+        # Returns a 11 long array with False or True values
         return np.array(state, dtype=int)
 
     def remember(self, state, action, reward, next_state, done):

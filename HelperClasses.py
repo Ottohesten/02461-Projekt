@@ -44,17 +44,17 @@ class Board:
 
 
         
-snake = game.snake
-print(snake)
+# snake = game.snake
+# print(snake)
 
-board = Board(640, 480, 20, snake)
+# board = Board(640, 480, 20, snake)
 
-print(board)
+# print(board)
 
 
 # print(game.snake)
 
 
 
-# TODO implement snake class
+# TODO implement snake class to be played with
 
