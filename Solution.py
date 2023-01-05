@@ -152,3 +152,8 @@ class SnakeGameAI:
             y -= BLOCK_SIZE
 
         self.head = Point(x, y)
+
+
+
+if __name__ == '__main__':
+    pass
