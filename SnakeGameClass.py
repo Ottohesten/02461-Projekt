@@ -102,7 +102,7 @@ class SnakeGame:
             self.move(action)
         else:
             print("no action")
-            self.move(None,direction=self.direction) # update the head
+            self.move(None,direction=Direction.RIGHT) # update the head
         self.snake.insert(0, self.head)
 
         # 3. Check if game over
