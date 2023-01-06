@@ -75,7 +75,7 @@ class Board:
         
         
         
-    def get_available_space_direction(self, direction): #TODO Return the available space for a given direction
+    def get_available_space_direction(self, direction): # Return the available space for a given direction using breadth first search
         visited = set()
         Q = deque()
         x,y = self.snake_head
@@ -87,7 +87,7 @@ class Board:
             Q.append(Point(x=x-1,y=y))
         elif direction == Direction.RIGHT:
             Q.append(Point(x=x+1,y=y))
-        # print(f"{Q=}\n{visited=}")
+
         while Q:
             point = Q.popleft()
             if not self.valid_cell(point):
@@ -102,7 +102,7 @@ class Board:
                     visited.add(neighbour)
         return len(visited)
             
-    def get_available_space(self):
+    def get_available_space(self): # Returns a dictionary with the available space for each direction, should return 0 if the next move in that way will result in dying.
         available_space = {direction.name: self.get_available_space_direction(direction) for direction in directions}
         return available_space
         
