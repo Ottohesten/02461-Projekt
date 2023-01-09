@@ -1,13 +1,20 @@
-from SnakeGameClass import SnakeGame
 import numpy as np
 import pandas as pd
-from SnakeGameClass import Direction, Point
-from collections import deque
-game = SnakeGame()
-directions = [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]
+from collections import deque, namedtuple
+from enum import Enum
+
+class Direction(Enum):
+    RIGHT = 1
+    LEFT = 2
+    UP = 3
+    DOWN = 4
+
+directions = [Direction.RIGHT, Direction.LEFT, Direction.UP, Direction.DOWN]
+Point = namedtuple('Point', ["x", "y"])
+
 
 class Board:
-    def __init__(self, width:int, height:int, block_size:int, snake=None, snake_head=None):
+    def __init__(self, width:int, height:int, block_size:int=1, snake=None, snake_head=None):
         self.width = width
         self.height = height
         self.block_size = block_size
@@ -39,7 +46,10 @@ class Board:
         for point in self.snake:
             # x, y = int(point.x)//self.block_size , int(point.y)//self.block_size
             x, y = int(point.x), int(point.y)
-            board[y, x] = 1
+            if x >= self.twidth or y >= self.theight:
+                pass
+            else:
+                board[y, x] = 1
         return board
     
     def valid_cell(self, point):
@@ -94,8 +104,6 @@ class Board:
                 # print("Initial point not valid")
                 break
             neighbours = self.get_neighbours(point)
-            # print(point)
-            # print(neighbours)
             for neighbour in neighbours:
                 if neighbour not in visited:
                     Q.append(neighbour)
@@ -106,6 +114,43 @@ class Board:
         available_space = {direction.name: self.get_available_space_direction(direction) for direction in directions}
         return available_space
         
+    def get_available_space_3directions(self, moving_direction):
+        clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
+        idx = clock_wise.index(moving_direction)
+
+        straight = clock_wise[idx]
+        right_turn = clock_wise[(idx+1)%4]
+        left_turn = clock_wise[(idx-1)%4]
+        available_space = {straight: self.get_available_space_direction(straight), right_turn: self.get_available_space_direction(right_turn), left_turn: self.get_available_space_direction(left_turn) }
+        return available_space
+
+    def manhattan_distance(self, direction, food):
+        x, y = self.snake_head
+        if direction == Direction.UP:
+            point = Point(x=x,y=y-1)
+        elif direction == Direction.DOWN:
+            point = Point(x=x,y=y+1)
+        elif direction == Direction.LEFT:
+            point = Point(x=x-1,y=y)
+        elif direction == Direction.RIGHT:
+            point = Point(x=x+1,y=y)
+        
+        dist = abs(point.x - food.x) + abs(point.y - food.y)
+        return dist
+
+    
+    
+    def manhattan_distance_3directions(self, moving_direction, food):
+        clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
+        idx = clock_wise.index(moving_direction)
+
+        straight = clock_wise[idx]
+        right_turn = clock_wise[(idx+1)%4]
+        left_turn = clock_wise[(idx-1)%4]
+
+        distances = {straight: self.manhattan_distance(straight, food), right_turn: self.manhattan_distance(right_turn, food), left_turn: self.manhattan_distance(left_turn, food)}
+        return distances
+
     
     def __repr__(self):
         return str(pd.DataFrame(self.board, dtype=int))
@@ -114,15 +159,15 @@ class Board:
         
             
 
-if __name__ == "__main__":
-    snake = [Point(i,10) for i in range(0, 20)]
-    board = Board(20, 20, 1, snake=snake)
-    print(board)
-    visited = {Point(3,4), Point(4,4)}
-    if Point(3,4) in visited:
-        print("yes")
+# if __name__ == "__main__":
+#     snake = [Point(i,10) for i in range(0, 20)]
+#     board = Board(20, 20, 1, snake=snake)
+#     print(board)
+#     visited = {Point(3,4), Point(4,4)}
+#     if Point(3,4) in visited:
+#         print("yes")
     
-    # visited = {1,2}
+#     # visited = {1,2}
     
 
 
@@ -132,3 +177,62 @@ if __name__ == "__main__":
 
 # TODO implement snake class to be played with
 
+
+
+class Snake:
+    def __init__(self, board_shape):
+        self.board_w = board_shape[1]
+        self.board_h = board_shape[0]
+        self.body:list[Point] = self.generate_snake_body()
+
+    
+    def generate_snake_body(self):
+        x,y = self.board_w//2, self.board_h//2 
+        return [
+            Point(x=x, y=y),
+            Point(x=x-1, y=y),
+            Point(x=x-2, y=y),
+        ]
+    @property
+    def head(self):
+        return self.body[0]
+    
+    def move(self, direction, food=None):
+        if direction == Direction.RIGHT:
+            new_head = Point(x=self.head.x+1, y=self.head.y)
+            self.body.insert(0, new_head)
+        elif direction == Direction.LEFT:
+            new_head = Point(x=self.head.x-1, y=self.head.y)
+            self.body.insert(0, new_head)
+        elif direction == Direction.UP:
+            new_head = Point(x=self.head.x, y=self.head.y-1)
+            self.body.insert(0, new_head)
+        elif direction == Direction.DOWN:
+            new_head = Point(x=self.head.x, y=self.head.y+1)
+            self.body.insert(0, new_head)
+        if food:
+            if food == new_head:
+                # print("ate food in snake move function")
+                pass
+            else:
+                self.body.pop()
+
+
+    
+    def remove_last(self):
+        self.body.pop()
+    
+    
+
+    def __repr__(self):
+        return str(self.body)
+
+
+
+'''
+
+if __name__ == "__main__":
+    snake = Snake((10,10))
+    print(snake.body)
+    
+'''

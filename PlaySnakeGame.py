@@ -30,7 +30,7 @@ SPEED = 20
 
 class SnakeGame:
     
-    def __init__(self, w=1400, h=1000):
+    def __init__(self, w=640, h=480):
         self.w = w
         self.h = h
         # init display
@@ -131,6 +131,7 @@ class SnakeGame:
             y -= BLOCK_SIZE
             
         self.head = Point(x, y)
+        print(self.head)
             
 
 if __name__ == '__main__':
