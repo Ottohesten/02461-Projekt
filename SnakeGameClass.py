@@ -10,8 +10,8 @@ font = pygame.font.SysFont('times new roman', 25)
 CLOCK_SPEED = 200
 BLOCK_SIZE = 20
 
-WIDTH = 20
-HEIGHT = 20
+WIDTH = 14
+HEIGHT = 14
 
 
 BLACK = pygame.Color(0, 0, 0)
