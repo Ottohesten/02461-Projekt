@@ -5,7 +5,7 @@ from collections import deque
 from HelperClasses import Direction, Point, Board
 from SnakeGameClass import SnakeGame
 # from Solution import SnakeGame
-from model import Linear_QNet, QTrainer
+from model import Linear_QNet, QTrainer, Conv_QNet, ConvQtrainer
 import time
 
 MAX_MEMORY = 100_000
@@ -19,62 +19,16 @@ class Agent:
         self.epsilon = 0 # randomness
         self.gamma = 0 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(10, 32, 3)
-        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+        self.model = Conv_QNet(32, (3,3))
+        self.trainer = ConvQtrainer(self.model, lr=LR, gamma=self.gamma)
 
 
     def get_state(self, game):
-        head = game.snake.head
-        point_l = Point(head.x - 1, head.y)
-        point_r = Point(head.x + 1, head.y)
-        point_u = Point(head.x, head.y - 1)
-        point_d = Point(head.x, head.y + 1)
+
+        board = Board(game.w, game.h, 1, game.snake.body, food=game.food)
         
-        dir_l = game.direction == Direction.LEFT
-        dir_r = game.direction == Direction.RIGHT
-        dir_u = game.direction == Direction.UP
-        dir_d = game.direction == Direction.DOWN
-
-        board = Board(game.w, game.h, 1, game.snake.body)
-        available_space = board.get_available_space_3directions(game.direction)
-        distances = board.manhattan_distance_3directions(game.direction, game.food)
-        # t1 = time.perf_counter()
-        # t2 = time.perf_counter()
-        # print(t2-t1)
-        state = [
-            # # Danger straight
-            # (dir_r and game.is_collision(point_r)) or 
-            # (dir_l and game.is_collision(point_l)) or 
-            # (dir_u and game.is_collision(point_u)) or 
-            # (dir_d and game.is_collision(point_d)),
-
-            # # Danger right
-            # (dir_u and game.is_collision(point_r)) or 
-            # (dir_d and game.is_collision(point_l)) or 
-            # (dir_l and game.is_collision(point_u)) or 
-            # (dir_r and game.is_collision(point_d)),
-
-            # # Danger left
-            # (dir_d and game.is_collision(point_r)) or 
-            # (dir_u and game.is_collision(point_l)) or 
-            # (dir_r and game.is_collision(point_u)) or 
-            # (dir_l and game.is_collision(point_d)),
-            
-            # Move direction
-            dir_r,
-            dir_l,
-            dir_u,
-            dir_d,
-            
-            # Food location 
-            # game.food.x > game.snake.head.x,  # food right
-            # game.food.x < game.snake.head.x,  # food left
-            # game.food.y < game.snake.head.y,  # food up
-            # game.food.y > game.snake.head.y  # food down
-            ] + list(available_space.values()) + list(distances.values())
-
         # Returns a 11 long array with False or True values
-        return np.array(state, dtype=int)
+        return np.array(board.to_tensor(), dtype=int)
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done)) # popleft if MAX_MEMORY is reached
@@ -95,7 +49,7 @@ class Agent:
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 500 - self.n_games
+        self.epsilon = 200 - self.n_games
         final_move = [0,0,0]
         if random.randint(0, 501) < self.epsilon:
             move = random.randint(0, 2)
@@ -104,7 +58,7 @@ class Agent:
             # print("random move")
             # print(final_move)
         else:
-            state0 = torch.tensor(state, dtype=torch.float)
+            state0 = torch.tensor(state, dtype=torch.float).unsqueeze(0)
             prediction = self.model(state0)
             move = torch.argmax(prediction).item()
             final_move[move] = 1
@@ -152,7 +106,7 @@ def train():
 
             if score > record:
                 record = score
-                agent.model.save()
+                # agent.model.save()
 
             # print('Game', agent.n_games, 'Score', score, 'Record:', record)
             print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}")
