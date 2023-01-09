@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from collections import deque, namedtuple
 from enum import Enum
+import torch
 
 class Direction(Enum):
     RIGHT = 1
@@ -14,10 +15,11 @@ Point = namedtuple('Point', ["x", "y"])
 
 
 class Board:
-    def __init__(self, width:int, height:int, block_size:int=1, snake=None, snake_head=None):
+    def __init__(self, width:int, height:int, block_size:int=1, snake=None, food:Point=None):
         self.width = width
         self.height = height
         self.block_size = block_size
+        self.food = food
         self.twidth = width // block_size
         self.theight = height // block_size
         self.original_snake = snake
@@ -44,12 +46,17 @@ class Board:
     def generate_board(self):
         board = self.empty_board()
         for point in self.snake:
-            # x, y = int(point.x)//self.block_size , int(point.y)//self.block_size
             x, y = int(point.x), int(point.y)
+            # print(f'x = {x}, y = {y}')
             if x >= self.twidth or y >= self.theight:
                 pass
             else:
                 board[y, x] = 1
+        
+        if self.food is not None and self.food not in self.snake:
+            x, y = int(self.food.x), int(self.food.y)
+            board[y, x] = 2
+        
         return board
     
     def valid_cell(self, point):
@@ -151,6 +158,26 @@ class Board:
         distances = {straight: self.manhattan_distance(straight, food), right_turn: self.manhattan_distance(right_turn, food), left_turn: self.manhattan_distance(left_turn, food)}
         return distances
 
+    def to_tensor(self):
+        board_tensor = np.zeros((3, self.theight, self.twidth), dtype=int)
+        self.board_tensor = board_tensor
+        
+        
+        for point in self.snake:
+            if point.x >= self.twidth or point.y >= self.theight:
+                pass
+            else:
+                board_tensor[1, point.y, point.x] = 1
+        
+        board_tensor[2, self.food.y, self.food.x] = 1
+        
+        temp = np.array(board_tensor[1] + board_tensor[2],dtype=int)
+        board_tensor[0] = temp^(temp&1==temp)
+        
+        return torch.tensor(board_tensor).to(torch.float32)
+        
+        
+    
     
     def __repr__(self):
         return str(pd.DataFrame(self.board, dtype=int))
