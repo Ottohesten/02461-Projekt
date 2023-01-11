@@ -2,7 +2,7 @@ import pygame
 import time
 import random
 import numpy as np
-from HelperClasses import Snake, Direction, Point
+from HelperClasses import Direction, Point, Board, Snake
 
 pygame.init()
 font = pygame.font.SysFont('times new roman', 25)
@@ -26,7 +26,7 @@ class SnakeGame:
         self.w = w
         self.h = h
         self.render_size_modifier = 1000//HEIGHT
-        self.display = pygame.display.set_mode((800, 800))
+        self.display = pygame.display.set_mode((1000, 1000))
         pygame.display.set_caption('Snake')
         self.clock = pygame.time.Clock()
         self.slow = True
@@ -51,6 +51,37 @@ class SnakeGame:
         self.food = Point(x, y)
         if self.food in self.snake.body:
             self.place_food()
+    
+    
+    def is_collision(self, pt=None):
+        if pt is None:
+            pt = self.snake.head
+        # hits boundary
+        if pt.x > self.w -1 or pt.x < 0 or pt.y > self.h -1 or pt.y < 0:
+            return True
+        # hits itself
+        if pt in self.snake.body[1:]:
+            return True
+
+        return False
+    
+
+    def move(self, action):
+        
+        clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
+        idx = clock_wise.index(self.direction)
+
+        if np.array_equal(action, [1, 0, 0]):
+            new_dir = clock_wise[idx] # no change
+        elif np.array_equal(action, [0, 1, 0]):
+            next_idx = (idx + 1) % 4
+            new_dir = clock_wise[next_idx] # right turn r -> d -> l -> u
+        else: # [0, 0, 1]
+            next_idx = (idx - 1) % 4
+            new_dir = clock_wise[next_idx] # left turn r -> u -> l -> d
+
+        self.direction = new_dir
+        self.snake.move(self.direction, self.food)
         
     def step(self, action):
         self.frame_iteration += 1
@@ -83,9 +114,9 @@ class SnakeGame:
         if self.pause:
             pass
         if self.slow:
-            self.clock.tick(2)
+            self.clock.tick(5)
         
-
+        # Set the previous head to be used in calculating the manhattan distance
         self.previous_head = self.snake.head
 
         # Move snake
@@ -156,36 +187,9 @@ class SnakeGame:
         self.display.blit(score_text, [0, 0])
         pygame.display.flip()
 
-    def is_collision(self, pt=None):
-        if pt is None:
-            pt = self.snake.head
-        # hits boundary
-        if pt.x > self.w -1 or pt.x < 0 or pt.y > self.h -1 or pt.y < 0:
-            return True
-        # hits itself
-        if pt in self.snake.body[1:]:
-            return True
-
-        return False
 
 
 
-    def move(self, action):
-        
-        clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
-        idx = clock_wise.index(self.direction)
-
-        if np.array_equal(action, [1, 0, 0]):
-            new_dir = clock_wise[idx] # no change
-        elif np.array_equal(action, [0, 1, 0]):
-            next_idx = (idx + 1) % 4
-            new_dir = clock_wise[next_idx] # right turn r -> d -> l -> u
-        else: # [0, 0, 1]
-            next_idx = (idx - 1) % 4
-            new_dir = clock_wise[next_idx] # left turn r -> u -> l -> d
-
-        self.direction = new_dir
-        self.snake.move(self.direction, self.food)
 
 
 

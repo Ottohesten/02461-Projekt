@@ -4,6 +4,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 import numpy as np
+from HelperClasses import drawnow
 
 class Linear_QNet(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -80,14 +81,16 @@ class QTrainer:
 
 # Convolutional section
 
-Conv_QNet = lambda channels_out, kernel_size, : nn.Sequential(
-    torch.nn.Conv2d(3, channels_out, kernel_size),
+Conv_QNet = lambda channels_in, channels_out, kernel_size, : nn.Sequential(
+    torch.nn.Conv2d(channels_in, channels_out, kernel_size),
     torch.nn.ReLU(),
-    torch.nn.MaxPool2d((2, 2)),
-    torch.nn.Conv2d(32, 32, (3,3)),
+    # torch.nn.AvgPool2d((2, 2)),
+    torch.nn.Conv2d(channels_out, channels_out, (5,5)),
     torch.nn.ReLU(),
+    # torch.nn.AvgPool2d((2, 2)),
     torch.nn.Flatten(),
-    torch.nn.Linear(32*4,3),
+    torch.nn.Linear(channels_out*2*2,3), # for 10x10 grid
+    # torch.nn.Linear(channels_out*3*3,3), # for 20x20 grid
 )
 
 
@@ -97,12 +100,13 @@ class ConvQtrainer:
         self.gamma = gamma
         self.model = model
         self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
-        # self.criterion = nn.MSELoss()
-        self.criterion = nn.L1Loss()
+        self.criterion = nn.MSELoss()
+        self.loss_list = []
+        # self.criterion = nn.L1Loss()
 
     def train_step(self, state, action, reward, next_state, done):
         state = torch.tensor(np.array(state), dtype=torch.float)
-        next_state = torch.tensor(np.array(next_state), dtype=torch.float)
+        # next_state = torch.tensor(next_state, dtype=torch.float)
         action = torch.tensor(np.array(action), dtype=torch.long)
         reward = torch.tensor(np.array(reward), dtype=torch.float)
         # (n, x)
@@ -114,11 +118,11 @@ class ConvQtrainer:
             action = torch.unsqueeze(action, 0)
             reward = torch.unsqueeze(reward, 0)
             done = (done, )
-            print("unsqueezed")
+            # print("unsqueezed")
 
         # 1: predicted Q values with current state
-        print(state.shape)
-        print(next_state.shape)
+        # print(state.shape)
+        # print(next_state.shape)
         pred = self.model(state)
         
 
@@ -127,7 +131,7 @@ class ConvQtrainer:
             Q_new = reward[idx]
             if not done[idx]:
                 # Q_next = self.model(next_state[idx])
-                Q_next = self.model(next_state)
+                Q_next = self.model(torch.unsqueeze(next_state[idx],0))
                 Q_new = reward[idx] + self.gamma * torch.max(Q_next)
 
             target[idx][torch.argmax(action[idx]).item()] = Q_new
@@ -135,9 +139,12 @@ class ConvQtrainer:
         # 2: Q_new = r + y * max(next_predicted Q value) -> only do this if not done
         # pred.clone()
         # preds[argmax(action)] = Q_new
-        self.optimizer.zero_grad()
         # loss = self.criterion(pred, target)
         loss = self.criterion(target, pred)
-        loss.backward()
+        self.loss_list.append(loss.item())
 
+        print(state)
+        
+        self.optimizer.zero_grad()
+        loss.backward()
         self.optimizer.step()

@@ -1,8 +1,9 @@
+import torch
 import numpy as np
 import pandas as pd
 from collections import deque, namedtuple
 from enum import Enum
-import torch
+import matplotlib.pyplot as plt
 
 class Direction(Enum):
     RIGHT = 1
@@ -38,7 +39,7 @@ class Board:
     
     
     def empty_board(self):
-        return np.zeros(self.shape, dtype=int)
+        return np.zeros(self.shape)
     
     def transform_snake(self):
         return [Point(x=x//self.block_size, y=y//self.block_size) for x,y in self.original_snake]
@@ -51,11 +52,12 @@ class Board:
             if x >= self.twidth or y >= self.theight:
                 pass
             else:
-                board[y, x] = 1
+                # The cells where the snake is will be denoted by 0.5
+                board[y, x] = 0.5
         
         if self.food is not None and self.food not in self.snake:
             x, y = int(self.food.x), int(self.food.y)
-            board[y, x] = 2
+            board[y, x] = 1.0
         
         return board
     
@@ -158,7 +160,9 @@ class Board:
         distances = {straight: self.manhattan_distance(straight, food), right_turn: self.manhattan_distance(right_turn, food), left_turn: self.manhattan_distance(left_turn, food)}
         return distances
 
-    def to_tensor(self):
+    def to_tensor(self, channels=3):
+        if channels == 1:
+            return torch.tensor(self.board).to(torch.float32)
         board_tensor = np.zeros((3, self.theight, self.twidth), dtype=int)
         self.board_tensor = board_tensor
         
@@ -180,7 +184,7 @@ class Board:
     
     
     def __repr__(self):
-        return str(pd.DataFrame(self.board, dtype=int))
+        return str(pd.DataFrame(self.board))
     
 
         
@@ -255,6 +259,18 @@ class Snake:
         return str(self.body)
 
 
+def stack_frames(f1, f2):
+    return torch.stack((f1,f2))
+
+
+def drawnow(data):
+    plt.ion()
+    plt.plot(data, ".")
+    plt.show()
+
+
+
+    
 
 '''
 
@@ -263,3 +279,5 @@ if __name__ == "__main__":
     print(snake.body)
     
 '''
+
+
