@@ -4,6 +4,7 @@ import pandas as pd
 from collections import deque, namedtuple
 from enum import Enum
 import matplotlib.pyplot as plt
+import tensorflow as tf
 
 class Direction(Enum):
     RIGHT = 1
@@ -180,7 +181,9 @@ class Board:
         
         return torch.tensor(board_tensor).to(torch.float32)
         
-        
+    def to_tensorflow_tensor(self):
+        return tf.convert_to_tensor(self.board, dtype=tf.float32)
+            
     
     
     def __repr__(self):

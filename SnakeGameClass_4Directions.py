@@ -67,15 +67,32 @@ class SnakeGame:
 
     def move(self, action):
 
+        # # 0 = Right,    1 = Left,   2 = Up,    3 = Down
+        # if action == 0 and self.direction != Direction.LEFT:
+        #     self.snake.move(Direction.RIGHT, self.food)
+        #     self.direction = Direction.RIGHT
+        # elif action == 1 and self.direction != Direction.RIGHT:
+        #     self.snake.move(Direction.LEFT, self.food)
+        #     self.direction = Direction.LEFT
+        # elif action == 2 and self.direction != Direction.DOWN:
+        #     self.snake.move(Direction.UP, self.food)
+        #     self.direction = Direction.UP
+        # elif action == 3 and self.direction != Direction.UP:
+        #     self.snake.move(Direction.DOWN, self.food)
+        #     self.direction = Direction.DOWN
+        # else:
+        #     # if the snake gets the input to move in the opposite direction, it will just move straight, ie not change direction.
+        #     self.snake.move(self.direction, self.food)
+        
         # 0 = Right,    1 = Left,   2 = Up,    3 = Down
         if action == 0:
-            self.snake.move(Direction.RIGHT)
+            self.snake.move(Direction.RIGHT, self.food)
         elif action == 1:
-            self.snake.move(Direction.LEFT)
+            self.snake.move(Direction.LEFT, self.food)
         elif action == 2:
-            self.snake.move(Direction.UP)
+            self.snake.move(Direction.UP, self.food)
         elif action == 3:
-            self.snake.move(Direction.DOWN)
+            self.snake.move(Direction.DOWN, self.food)
         
     def step(self, action):
         self.frame_iteration += 1
@@ -119,19 +136,19 @@ class SnakeGame:
 
 
         # 3. Check if game over
-        reward = -0.3
+        reward = -0.03
         game_over = False
         if self.is_collision() or self.frame_iteration > 200*len(self.snake.body):
             print("Collision")
             game_over = True
-            reward = -1
+            reward = -2
             return reward, game_over, self.score
 
         # 4. Place new food or just move
         if self.snake.head == self.food:
             # print("ate food")
             self.score += 1
-            reward = 2
+            reward = 4
             self.place_food()
         else:
             # We remove last element in list because the snake didn't get longer
