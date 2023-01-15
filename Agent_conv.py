@@ -5,70 +5,36 @@ from collections import deque
 from HelperClasses import Direction, Point, Board
 from SnakeGameClass import SnakeGame
 # from Solution import SnakeGame
-from model import Linear_QNet, QTrainer
+from model import Linear_QNet, QTrainer, Conv_QNet, ConvQtrainer
 import time
 
-MAX_MEMORY = 100_00
-BATCH_SIZE = 32
-LR = 0.001
+MAX_MEMORY = 100_000
+BATCH_SIZE = 1000
+LR = 0.005
 
 class Agent:
 
     def __init__(self):
         self.n_games = 0
         self.epsilon = 0 # randomness
+        self.epsilon_step = 0.0005
+        self.epsilon_min = 0.01
         self.gamma = 0 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(10, 32, 3)
-        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+        self.model = Conv_QNet(2, 16, (5,5))
+        self.trainer = ConvQtrainer(self.model, lr=LR, gamma=self.gamma)
 
 
     def get_state(self, game):
-        head = game.snake.head
 
-        dir_l = game.direction == Direction.LEFT
-        dir_r = game.direction == Direction.RIGHT
-        dir_u = game.direction == Direction.UP
-        dir_d = game.direction == Direction.DOWN
-
-        board = Board(game.w, game.h, game.snake)
-        available_space = board.get_available_space_3directions(game.direction)
-        distances = board.manhattan_distance_3directions(game.direction, game.food)
-
-        state = [
-            # # Danger straight
-            # (dir_r and game.is_collision(point_r)) or 
-            # (dir_l and game.is_collision(point_l)) or 
-            # (dir_u and game.is_collision(point_u)) or 
-            # (dir_d and game.is_collision(point_d)),
-
-            # # Danger right
-            # (dir_u and game.is_collision(point_r)) or 
-            # (dir_d and game.is_collision(point_l)) or 
-            # (dir_l and game.is_collision(point_u)) or 
-            # (dir_r and game.is_collision(point_d)),
-
-            # # Danger left
-            # (dir_d and game.is_collision(point_r)) or 
-            # (dir_u and game.is_collision(point_l)) or 
-            # (dir_r and game.is_collision(point_u)) or 
-            # (dir_l and game.is_collision(point_d)),
-            
-            # Move direction
-            dir_r,
-            dir_l,
-            dir_u,
-            dir_d,
-            
-            # Food location 
-            # game.food.x > game.snake.head.x,  # food right
-            # game.food.x < game.snake.head.x,  # food left
-            # game.food.y < game.snake.head.y,  # food up
-            # game.food.y > game.snake.head.y  # food down
-            ] + list(available_space.values()) + list(distances.values())
-
+        board = Board(game.w, game.h, 1, game.snake.body, food=game.food)
+        
         # Returns a 11 long array with False or True values
-        return np.array(state, dtype=int)
+        return board.to_tensor(channels=1)
+    
+    def get_states(self, game):
+        pass
+
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done)) # popleft if MAX_MEMORY is reached
@@ -81,24 +47,26 @@ class Agent:
 
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
+        test = 10
         #for state, action, reward, nexrt_state, done in mini_sample:
         #    self.trainer.train_step(state, action, reward, next_state, done)
 
     def train_short_memory(self, state, action, reward, next_state, done):
         self.trainer.train_step(state, action, reward, next_state, done)
 
-    def get_action(self, state):
+    def get_action(self, state_stacked):
+        # stack the frames
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 500 - self.n_games
+        self.epsilon = 1 - self.epsilon_step*self.n_games
         final_move = [0,0,0]
-        if random.randint(0, 501) < self.epsilon:
+        if random.uniform(0, 1) < max(self.epsilon,0.01):
             move = random.randint(0, 2)
             final_move[move] = 1
             abcd = 10
             # print("random move")
             # print(final_move)
         else:
-            state0 = torch.tensor(state, dtype=torch.float)
+            state0 = state_stacked.unsqueeze(0)
             prediction = self.model(state0)
             move = torch.argmax(prediction).item()
             final_move[move] = 1
@@ -110,6 +78,8 @@ class Agent:
         return final_move
 
 
+
+
 def train():
     plot_scores = []
     plot_mean_scores = []
@@ -118,35 +88,55 @@ def train():
     agent = Agent()
     game = SnakeGame()
     # game = SnakeGameAI()'
+    first_iteration = True
     while True:
-        # get old state
-        state_old = agent.get_state(game)
+        if first_iteration:
+            state_old = agent.get_state(game)
+            reward, done, score = game.step(action=[1,0,0])
 
-        # get move
-        final_move = agent.get_action(state_old)
+            
+
+        # get old state
+        state_current = agent.get_state(game)
+
+        # Stack the two states to CWH dimension with c = 2, w,h = width,heigh
+        stack_1 = torch.stack((state_old, state_current))
+
+        # get move from 2 states so we can tell direction
+        final_move = agent.get_action(stack_1)
 
         # perform move and get new state
         reward, done, score = game.step(action=final_move)
         # reward, done, score = game.play_step(action=final_move)
         # print(final_move)
+
+        # Get new state after doing action
         state_new = agent.get_state(game)
 
+        # Stack the new state with the current so we get state 0-1, stacked and state 1-2 stacked
+        stack_2 = torch.stack((state_current, state_new))
+
         # train short memory
-        agent.train_short_memory(state_old, final_move, reward, state_new, done)
+        agent.train_short_memory(stack_1, final_move, reward, stack_2, done)
 
         # remember
-        agent.remember(state_old, final_move, reward, state_new, done)
-        if agent.n_games > 1000:
+        agent.remember(stack_1, final_move, reward, stack_2, done)
+
+        # Make state current the stack old, so when the loop goes again it starts with getting current state which will be the new state
+        state_old = state_current
+
+
+        if agent.n_games > 3000:
             abcd = 10
         if done:
             # train long memory, plot result
             game.reset()
             agent.n_games += 1
-            agent.train_long_memory()
+            # agent.train_long_memory()
 
             if score > record:
                 record = score
-                agent.model.save()
+                # agent.model.save()
 
             # print('Game', agent.n_games, 'Score', score, 'Record:', record)
             print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}")

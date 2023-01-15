@@ -24,9 +24,9 @@ BLUE2 = (0, 100, 255)
 BLACK = (0,0,0)
 
 BLOCK_SIZE = 20
-SPEED = 40
+SPEED = 200
 
-class SnakeGameAI:
+class SnakeGame:
 
     def __init__(self, w=640, h=480):
         self.w = w
@@ -61,7 +61,7 @@ class SnakeGameAI:
             self._place_food()
 
 
-    def play_step(self, action):
+    def step(self, action):
         self.frame_iteration += 1
         # 1. collect user input
         for event in pygame.event.get():
