@@ -53,8 +53,6 @@ class QTrainer:
             done = (done, )
 
         # 1: predicted Q values with current state
-        print(state.shape)
-        print(next_state.shape)
         pred = self.model(state)
 
         target = pred.clone()
@@ -62,7 +60,6 @@ class QTrainer:
             Q_new = reward[idx]
             if not done[idx]:
                 ns = next_state[idx]
-                print(ns.shape)
                 Q_next = self.model(next_state[idx])
                 Q_new = reward[idx] + self.gamma * torch.max(Q_next)
 
@@ -143,7 +140,6 @@ class ConvQtrainer:
         loss = self.criterion(target, pred)
         self.loss_list.append(loss.item())
 
-        print(state)
         
         self.optimizer.zero_grad()
         loss.backward()

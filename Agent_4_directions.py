@@ -2,17 +2,19 @@ import torch
 import random
 import numpy as np
 import tensorflow as tf
+import pandas as pd
 from collections import deque
 from SnakeGameClass_4Directions import SnakeGame, Direction, Point
 # from Solution import SnakeGameAI, Direction, Point
 # from model import Linear_QNet, QTrainer
 from tf_models import create_model
 from HelperClasses import Board
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
-MAX_MEMORY = 100_000
-BATCH_SIZE = 200
-INIT_MEMORY = 1000
+MAX_MEMORY = 100_00
+BATCH_SIZE = 32
 
 LR = 0.001
 
@@ -22,11 +24,12 @@ class Agent:
         self.n_games = 0
         self.epsilon = 0 # randomness
         self.epsilon_step = 0.001
-        self.nframes = 2
+        self.nframes = 4
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = create_model()
-        self.target_model = create_model()
+        # self.model = create_model()
+        self.model = tf.keras.models.load_model("tf_model_most_trained")
+        # self.model = tf.keras.models.load_model("tf_model_highest_performer")
         # self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
@@ -58,26 +61,36 @@ class Agent:
     def get_random_action(self):
         return random.randint(0,3)
     
+    def get_predicted_action(self, state):
+        state0 = tf.expand_dims(state, axis=0)
+        prediction = self.model(state0)[0]
+        # print(prediction)
+        move = np.argmax(prediction)
+        return move
+
+    
+    def get_move_right(self):
+        return 1
+    
     
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 1 - self.epsilon_step*self.n_games
+        self.epsilon = 1.0 - self.epsilon_step*self.n_games
         if random.uniform(0, 1) < max(self.epsilon,0.01):
             move = self.get_random_action()
         else:
-            state0 = tf.expand_dims(state, axis=0)
-            prediction = self.model(state0)[0]
-            # print(prediction)
-            move = np.argmax(prediction)
-            print(move)
+            move = self.get_predicted_action(state)
+            # print(move)
         return move
+    
         
     def get_first_state(self, game, predict=False):
         # Get the first 4 frames and turn them into a state
         first_nframe_states = []
         while len(first_nframe_states) < self.nframes:
             state = self.get_state(game)
-            action = self.get_random_action()
+            # action = self.get_random_action()
+            action = self.get_move_right() # only move right to make sure we don't kill outselves
             reward, done, score = game.step(action=action)
             state_new = self.get_state(game)
             
@@ -90,8 +103,20 @@ class Agent:
         state = stacked
         
         return state
+    def get_init_states(self, env):
+        current_state = np.zeros((env.h, env.w, self.nframes))
+
+        for i in range(self.nframes):
+            current_state[:,:,i] = env.state
+        
+        return current_state, current_state
+
+
+
     
     def experience_replay(self):
+        if len(self.memory) < BATCH_SIZE:
+            return
         minibatch = random.sample(self.memory, BATCH_SIZE)
         states, actions, rewards, next_states, dones = zip(*minibatch)
         states = np.array(states)
@@ -110,28 +135,6 @@ class Agent:
             targets[idx][actions[idx]] = Q_new
             abcd = 10
         
-
-        
-        # print("running in experience replay")
-        # for state, action, reward, next_state, done in minibatch:
-            
-        #     target = reward
-            
-        #     if not done:
-        #         Q_next = self.model.predict(np.expand_dims(next_state, axis=0))
-        #         best_future_action = np.argmax(Q_next)
-        #         pred = self.target_model.predict(np.expand_dims(next_state, axis=0))[0][best_future_action]
-        #         target = reward + self.gamma * pred
-            
-        #     # get a 4 long array with the target value for each action, set the target value for the action that was taken to the target value
-        #     target_vector = self.model.predict(np.expand_dims(state, axis=0))[0]
-        #     target_vector[action] = target
-            
-            
-        #     targets.append(target_vector)
-            
-        #     states.append(state)
-            
         self.model.fit(states, targets, epochs=1, verbose=1)
         # print("done fitting")
         
@@ -141,94 +144,187 @@ class Agent:
 
 
 def train():
+    scores = []
+    mean_scores = []
+    total_score = 0
+    record = 0
+    agent = Agent()
+    env = SnakeGame()
+
+    while True:
+        env.reset()
+        current_state, next_state = agent.get_init_states(env)
+        done = False
+        agent.n_games += 1
+        data = pd.DataFrame()
+
+
+        while not done:
+            # Get an action that is either random or prediced based on epsilon
+            action = agent.get_action(current_state)
+
+            # Get the new state
+            state, reward, done, score = env.step(action=action)
+
+            # reshape shape to be of dimension (1, height, width, 1)
+            state = np.reshape(state, (env.h, env.w, 1))
+            next_state = np.append(next_state, state, axis=-1)
+            next_state = np.delete(next_state, 0, axis=-1)
+
+            if score >= 1:
+                abcd = 10
+            
+
+            # Remember the parameters for trainging
+            agent.remember(current_state, action, reward, next_state, done)
+
+            # This is where we train the network
+            agent.experience_replay()
+
+            # We set the current state to the next state so that in the next iteration we start with this state
+            current_state = next_state
+
+            if score > record:
+                record = score
+                agent.model.save("tf_model_highest_performer", save_format="h5") # Save the model which has gotten the highest score during the training session
+            
+            if done:
+                scores.append(score)
+                total_score += score
+                mean_score = total_score / agent.n_games
+                mean_scores.append(mean_score)
+                data["scores"] = scores
+
+
+                print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}\t epsilon: {agent.epsilon}")
+                if agent.n_games % 100 == 0:
+                    agent.model.save("tf_model_most_trained", save_format="h5") # Save the model every 100 games
+                    data.to_csv("Data_no_illegal_action2.csv")
+            
+
+
+
+
+
+        # # Get move
+        # action = agent.get_action(state)
+
+        # # perform move and get new state
+        # state, reward, done, score = env.step(action=action)
+        # # print(f"Reward: {reward}\t Done: {done}\t Score: {score}")
+        # # print(final_move)
+        # state_new_1frame = agent.get_state(game)
+        
+        # # add the new frame to the end of the frame states
+        # state_new = np.append(state, np.expand_dims(state_new_1frame, axis=-1), axis=-1)
+        
+        # # remove the first element from the state so we still have nframes
+        # state_new = np.delete(state_new, 0, axis=-1)
+
+
+        # # remember
+        # agent.remember(state, action, reward, state_new, done)
+        
+        # experience replay
+        # agent.experience_replay()
+        
+        # state = state_new
+        
+        # if agent.n_games > 1000:
+        #     abcd = 10
+        # if done:
+        #     # train long memory, plot result
+        #     game.reset()
+        #     state = agent.get_first_state(game)
+        #     agent.n_games += 1
+        #     # agent.train_long_memory()
+
+        #     if score > record:
+        #         record = score
+        #         agent.model.save("tf_model")
+
+        #     # print('Game', agent.n_games, 'Score', score, 'Record:', record)
+        #     print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}")
+
+        #     plot_scores.append(score)
+        #     total_score += score
+        #     mean_score = total_score / agent.n_games
+        #     plot_mean_scores.append(mean_score)
+            # plot(plot_scores, plot_mean_scores)
+
+
+
+
+
+
+
+
+
+
+
+
+# TEST THE MODEL BY LOADING IT IN FROM FILE AND NOT TRAINING IT WHILE RUNNING
+def test():
     plot_scores = []
     plot_mean_scores = []
     total_score = 0
     record = 0
     agent = Agent()
-    game = SnakeGame()
-    # game = SnakeGameAI()
-    
-    state = agent.get_first_state(game)
-    # fill the memory with initial data with random actions
-    while len(agent.memory) < INIT_MEMORY:
-        action = agent.get_random_action()
-        reward, done, score = game.step(action=action)
-        
-        # The new state is only one frame, we want to append this to the state with 4 frames, and remove the first frame.
-        state_new_1frame: np.ndarray = agent.get_state(game)
-        # state_new = tf.stack((state[:,:,1], state[:,:,2], state[:,:,3],state_new_1frame), axis=-1)
-        
-        # add the new frame to the end of the frame states
-        state_new = np.append(state, np.expand_dims(state_new_1frame, axis=-1), axis=-1)
-        
-        # remove the first element from the state so we still have nframes
-        state_new = np.delete(state_new, 0, axis=-1)
-        
-        # This line tests if last element of the state equals the second last element of the new state. Should return True
-        # print(state_new[:,:,-2] == state[:,:,1])
-        
-        
-        agent.remember(state, action, reward, state_new, done)
-        # print(f"Memory: {len(agent.memory)}")
-        # print(f"Memory: {agent.memory}")
-        state = state_new
-        
-        if done:
-            game.reset()
-            state = agent.get_first_state(game)
-            
-    # Main game loop to play the game after we have created the initial 4 frames, and filled the memory to the INIT_MEMORY
+    env = SnakeGame()
+
+
     while True:
-        # Just for clarification, we get the state from the prefilled memory
-        state = state
+        env.reset()
+        current_state, next_state = agent.get_init_states(env)
+        done = False
+        
+        agent.n_games += 1
 
-        # Get move
-        action = agent.get_action(state)
+        while not done:
+            # Get an action that is either random or prediced based on epsilon
+            action = agent.get_predicted_action(current_state)
 
-        # perform move and get new state
-        reward, done, score = game.step(action=action)
-        # print(f"Reward: {reward}\t Done: {done}\t Score: {score}")
-        # print(final_move)
-        state_new_1frame = agent.get_state(game)
-        
-        # add the new frame to the end of the frame states
-        state_new = np.append(state, np.expand_dims(state_new_1frame, axis=-1), axis=-1)
-        
-        # remove the first element from the state so we still have nframes
-        state_new = np.delete(state_new, 0, axis=-1)
+            # Get the new state
+            state, reward, done, score = env.step(action=action)
+
+            # reshape shape to be of dimension (1, height, width, 1)
+            state = np.reshape(state, (env.h, env.w, 1))
+            next_state = np.append(next_state, state, axis=-1)
+            next_state = np.delete(next_state, 0, axis=-1)
 
 
-        # remember
-        agent.remember(state, action, reward, state_new, done)
-        
-        # experience replay
-        agent.experience_replay()
-        
-        state = state_new
-        
-        if agent.n_games > 1000:
-            abcd = 10
-        if done:
-            # train long memory, plot result
-            game.reset()
-            agent.n_games += 1
-            # agent.train_long_memory()
+            # We set the current state to the next state so that in the next iteration we start with this state
+            current_state = next_state
 
             if score > record:
                 record = score
-                agent.model.save("tf_model")
 
-            # print('Game', agent.n_games, 'Score', score, 'Record:', record)
-            print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}")
+            if done:
+                print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}")
+        
+        # if agent.n_games > 1000:
+        #     abcd = 10
+        # if done:
+        #     # train long memory, plot result
+        #     game.reset()
+        #     state = agent.get_first_state(game)
+        #     agent.n_games += 1
+        #     # agent.train_long_memory()
 
-            plot_scores.append(score)
-            total_score += score
-            mean_score = total_score / agent.n_games
-            plot_mean_scores.append(mean_score)
-            # plot(plot_scores, plot_mean_scores)
+        #     if score > record:
+        #         record = score
+        #         agent.model.save("tf_model")
 
+        #     # print('Game', agent.n_games, 'Score', score, 'Record:', record)
+        #     print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}")
+
+        #     plot_scores.append(score)
+        #     total_score += score
+        #     mean_score = total_score / agent.n_games
+        #     plot_mean_scores.append(mean_score)
+        #     # plot(plot_scores, plot_mean_scores)
 
 if __name__ == '__main__':
     train()
+    # test()
     pass

@@ -8,8 +8,8 @@ from SnakeGameClass import SnakeGame
 from model import Linear_QNet, QTrainer
 import time
 
-MAX_MEMORY = 100_000
-BATCH_SIZE = 1000
+MAX_MEMORY = 100_00
+BATCH_SIZE = 32
 LR = 0.001
 
 class Agent:
@@ -25,22 +25,16 @@ class Agent:
 
     def get_state(self, game):
         head = game.snake.head
-        point_l = Point(head.x - 1, head.y)
-        point_r = Point(head.x + 1, head.y)
-        point_u = Point(head.x, head.y - 1)
-        point_d = Point(head.x, head.y + 1)
-        
+
         dir_l = game.direction == Direction.LEFT
         dir_r = game.direction == Direction.RIGHT
         dir_u = game.direction == Direction.UP
         dir_d = game.direction == Direction.DOWN
 
-        board = Board(game.w, game.h, 1, game.snake.body)
+        board = Board(game.w, game.h, game.snake)
         available_space = board.get_available_space_3directions(game.direction)
         distances = board.manhattan_distance_3directions(game.direction, game.food)
-        # t1 = time.perf_counter()
-        # t2 = time.perf_counter()
-        # print(t2-t1)
+
         state = [
             # # Danger straight
             # (dir_r and game.is_collision(point_r)) or 
