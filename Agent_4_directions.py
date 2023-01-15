@@ -28,7 +28,7 @@ class Agent:
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         # self.model = create_model()
-        self.model = tf.keras.models.load_model("tf_model_most_trained")
+        self.model = tf.keras.models.load_model("saved_models/tf_model_most_trained")
         # self.model = tf.keras.models.load_model("tf_model_highest_performer")
         # self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
@@ -186,7 +186,7 @@ def train():
 
             if score > record:
                 record = score
-                agent.model.save("tf_model_highest_performer", save_format="h5") # Save the model which has gotten the highest score during the training session
+                agent.model.save("saved_models/tf_model_highest_performer", save_format="h5") # Save the model which has gotten the highest score during the training session
             
             if done:
                 scores.append(score)
@@ -198,7 +198,7 @@ def train():
 
                 print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}\t epsilon: {agent.epsilon}")
                 if agent.n_games % 100 == 0:
-                    agent.model.save("tf_model_most_trained", save_format="h5") # Save the model every 100 games
+                    agent.model.save("saved_models/tf_model_most_trained", save_format="h5") # Save the model every 100 games
                     data.to_csv("Data_no_illegal_action2.csv")
             
 
