@@ -78,15 +78,16 @@ class QTrainer:
 
 # Convolutional section
 
-Conv_QNet = lambda channels_in, channels_out, kernel_size, : nn.Sequential(
-    torch.nn.Conv2d(channels_in, channels_out, kernel_size),
+Conv_QNet = lambda : nn.Sequential(
+    torch.nn.Conv2d(4, 32, (3,3)),
     torch.nn.ReLU(),
-    # torch.nn.AvgPool2d((2, 2)),
-    torch.nn.Conv2d(channels_out, channels_out, (5,5)),
+    torch.nn.MaxPool2d((2, 2)),
+    torch.nn.Conv2d(32, 64, (2,2)),
     torch.nn.ReLU(),
-    # torch.nn.AvgPool2d((2, 2)),
     torch.nn.Flatten(),
-    torch.nn.Linear(channels_out*2*2,3), # for 10x10 grid
+    torch.nn.Linear(64*3*3,64*2*2), # for 10x10 grid
+    torch.nn.ReLU(),
+    torch.nn.Linear(64*2*2,4), # for 10x10 grid
     # torch.nn.Linear(channels_out*3*3,3), # for 20x20 grid
 )
 
