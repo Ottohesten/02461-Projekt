@@ -8,7 +8,7 @@ from SnakeGameClass import SnakeGame
 from model import Linear_QNet, QTrainer
 import time
 
-MAX_MEMORY = 100_00
+MAX_MEMORY = 5000
 BATCH_SIZE = 32
 LR = 0.001
 
@@ -17,7 +17,7 @@ class Agent:
     def __init__(self):
         self.n_games = 0
         self.epsilon = 0 # randomness
-        self.gamma = 0 # discount rate
+        self.gamma = 0.8 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         self.model = Linear_QNet(10, 32, 3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)

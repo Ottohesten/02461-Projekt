@@ -90,35 +90,34 @@ class SnakeGame:
     
 
     def move(self, action):
-        abcd = 10
         # 0 = Left,    1 = Right,   2 = Up,    3 = Down
-        if action == 0 and self.direction != Direction.RIGHT:
-            self.snake.move(Direction.LEFT, self.food)
-            self.direction = Direction.LEFT
-        elif action == 1 and self.direction != Direction.LEFT:
-            self.snake.move(Direction.RIGHT, self.food)
-            self.direction = Direction.RIGHT
-        elif action == 2 and self.direction != Direction.DOWN:
-            self.snake.move(Direction.UP, self.food)
-            self.direction = Direction.UP
-        elif action == 3 and self.direction != Direction.UP:
-            self.snake.move(Direction.DOWN, self.food)
-            self.direction = Direction.DOWN
-        else:
-            # if the snake gets the input to move in the opposite direction, it will just move straight, ie not change direction.
-            self.snake.move(self.direction, self.food)
+        # if action == 0 and self.direction != Direction.RIGHT:
+        #     self.snake.move(Direction.LEFT, self.food)
+        #     self.direction = Direction.LEFT
+        # elif action == 1 and self.direction != Direction.LEFT:
+        #     self.snake.move(Direction.RIGHT, self.food)
+        #     self.direction = Direction.RIGHT
+        # elif action == 2 and self.direction != Direction.DOWN:
+        #     self.snake.move(Direction.UP, self.food)
+        #     self.direction = Direction.UP
+        # elif action == 3 and self.direction != Direction.UP:
+        #     self.snake.move(Direction.DOWN, self.food)
+        #     self.direction = Direction.DOWN
+        # else:
+        #     # if the snake gets the input to move in the opposite direction, it will just move straight, ie not change direction.
+        #     self.snake.move(self.direction, self.food)
         
 
         
         # 0 = Left,    1 = Right,   2 = Up,    3 = Down
-        # if action == 0:
-        #     self.snake.move(Direction.LEFT, self.food)
-        # elif action == 1:
-        #     self.snake.move(Direction.RIGHT, self.food)
-        # elif action == 2:
-        #     self.snake.move(Direction.UP, self.food)
-        # elif action == 3:
-        #     self.snake.move(Direction.DOWN, self.food)
+        if action == 0:
+            self.snake.move(Direction.LEFT, self.food)
+        elif action == 1:
+            self.snake.move(Direction.RIGHT, self.food)
+        elif action == 2:
+            self.snake.move(Direction.UP, self.food)
+        elif action == 3:
+            self.snake.move(Direction.DOWN, self.food)
         
         
     def step(self, action):

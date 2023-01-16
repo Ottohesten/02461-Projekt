@@ -10,8 +10,8 @@ font = pygame.font.SysFont('times new roman', 25)
 CLOCK_SPEED = 200
 BLOCK_SIZE = 20
 
-WIDTH = 10
-HEIGHT = 10
+WIDTH = 5
+HEIGHT = 5
 
 
 BLACK = pygame.Color(0, 0, 0)
@@ -25,8 +25,8 @@ class SnakeGame:
     def __init__(self, w=WIDTH, h=HEIGHT):
         self.w = w
         self.h = h
-        self.render_size_modifier = 1000//HEIGHT
-        self.display = pygame.display.set_mode((1000, 1000))
+        self.render_size_modifier = 800//HEIGHT
+        self.display = pygame.display.set_mode((800, 800))
         pygame.display.set_caption('Snake')
         self.clock = pygame.time.Clock()
         self.slow = True
