@@ -13,7 +13,7 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
-MAX_MEMORY = 100_00
+MAX_MEMORY = 5_000
 BATCH_SIZE = 32
 
 LR = 0.001
@@ -22,20 +22,20 @@ class Agent:
 
     def __init__(self):
         self.n_games = 0
-        self.epsilon = 0 # randomness
+        self.epsilon_start = 0 # randomness
         self.epsilon_step = 0.001
         self.nframes = 4
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         # self.model = create_model()
-        self.model = tf.keras.models.load_model("saved_models/tf_model_most_trained")
+        self.model = tf.keras.models.load_model("saved_models/no_illegal_action_performer_trained")
         # self.model = tf.keras.models.load_model("tf_model_highest_performer")
         # self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
     def get_state(self, game):
 
-        board = Board(game.w, game.h, 1, game.snake.body, food=game.food)
+        board = Board(game.w, game.h, game.snake, food=game.food)
         
         # Returns a 11 long array with False or True values
         return board.to_tensorflow_tensor().numpy()
@@ -75,7 +75,7 @@ class Agent:
     
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 1.0 - self.epsilon_step*self.n_games
+        self.epsilon = self.epsilon_start - self.epsilon_step*self.n_games
         if random.uniform(0, 1) < max(self.epsilon,0.01):
             move = self.get_random_action()
         else:
@@ -150,13 +150,15 @@ def train():
     record = 0
     agent = Agent()
     env = SnakeGame()
+    model_filepath = "saved_models/"
+    data_filepath = "data/no_illegal_action.csv"
 
     while True:
         env.reset()
         current_state, next_state = agent.get_init_states(env)
         done = False
         agent.n_games += 1
-        data = pd.DataFrame()
+
 
 
         while not done:
@@ -186,20 +188,18 @@ def train():
 
             if score > record:
                 record = score
-                agent.model.save("saved_models/tf_model_highest_performer", save_format="h5") # Save the model which has gotten the highest score during the training session
+                agent.model.save(f"{model_filepath}no_illegal_action_performer", save_format="h5") # Save the model which has gotten the highest score during the training session
             
             if done:
-                scores.append(score)
-                total_score += score
-                mean_score = total_score / agent.n_games
-                mean_scores.append(mean_score)
-                data["scores"] = scores
+                with open(data_filepath, "a") as data_file:
+                    data_file.write("\n")
+                    data_file.write(str(score))
 
 
                 print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}\t epsilon: {agent.epsilon}")
                 if agent.n_games % 100 == 0:
-                    agent.model.save("saved_models/tf_model_most_trained", save_format="h5") # Save the model every 100 games
-                    data.to_csv("Data_no_illegal_action2.csv")
+                    agent.model.save(f"{model_filepath}no_illegal_action_performer_trained", save_format="h5") # Save the model every 100 games
+                    # data.to_csv("data/Data_no_illegal_action3.csv")
             
 
 
