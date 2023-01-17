@@ -136,17 +136,8 @@ class Agent:
             abcd = 10
         
         self.model.fit(states, targets, epochs=1, verbose=1)
-        # print("done fitting")
-        
-        
-        
-    
-
 
 def train():
-    scores = []
-    mean_scores = []
-    total_score = 0
     record = 0
     agent = Agent()
     env = SnakeGame()

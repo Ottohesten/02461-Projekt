@@ -16,8 +16,9 @@ class Agent:
 
     def __init__(self):
         self.n_games = 0
-        self.epsilon = 0 # randomness
-        self.gamma = 0.8 # discount rate
+        self.epsilon_start = 1 # randomness
+        self.epsilon_step = 0.001
+        self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         self.model = Linear_QNet(10, 32, 3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
@@ -89,9 +90,9 @@ class Agent:
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 500 - self.n_games
+        self.epsilon = self.epsilon_start - self.epsilon_step*self.n_games
         final_move = [0,0,0]
-        if random.randint(0, 501) < self.epsilon:
+        if random.uniform(0, 1) < max(self.epsilon,0.01):
             move = random.randint(0, 2)
             final_move[move] = 1
             abcd = 10

@@ -51,6 +51,7 @@ class SnakeGame:
         self.food = Point(x, y)
         if self.food in self.snake.body:
             self.place_food()
+            
     
     
     def is_collision(self, pt=None):
