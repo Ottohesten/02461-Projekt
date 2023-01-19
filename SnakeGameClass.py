@@ -10,8 +10,8 @@ font = pygame.font.SysFont('times new roman', 25)
 CLOCK_SPEED = 200
 BLOCK_SIZE = 20
 
-WIDTH = 5
-HEIGHT = 5
+WIDTH = 10
+HEIGHT = 10
 
 
 BLACK = pygame.Color(0, 0, 0)
@@ -25,8 +25,8 @@ class SnakeGame:
     def __init__(self, w=WIDTH, h=HEIGHT):
         self.w = w
         self.h = h
-        self.render_size_modifier = 800//HEIGHT
-        self.display = pygame.display.set_mode((800, 800))
+        self.render_size_modifier = 1000//HEIGHT
+        self.display = pygame.display.set_mode((1000, 1000))
         pygame.display.set_caption('Snake')
         self.clock = pygame.time.Clock()
         self.slow = True
@@ -41,9 +41,16 @@ class SnakeGame:
         self.snake = Snake((self.h, self.w))
         self.score = 0
         self.food = None
-        self.place_food()
         self.frame_iteration = 0
-        # print("Started new game")
+        self.state = np.zeros((self.h, self.w))
+        self.place_snake()
+        self.place_food()
+        return self.state
+
+    def place_snake(self):
+        for point in self.snake.body:
+            self.state[point.y][point.x] = 0.5
+        # self.state[self.snake.head.y][self.snake.head.x] = 0.75
 
     def place_food(self):
         x = random.randint(0, self.w-1)
@@ -51,6 +58,7 @@ class SnakeGame:
         self.food = Point(x, y)
         if self.food in self.snake.body:
             self.place_food()
+        self.state[y][x] = 1.0
             
     
     
@@ -66,23 +74,35 @@ class SnakeGame:
 
         return False
     
+    def update_state(self):
+        new_state = np.zeros((self.h, self.w))
+        for point in self.snake.body:
+            new_state[point.y][point.x] = 0.5
+        
+        new_state[self.food.y][self.food.x] = 1.0
+        self.state = new_state
 
-    def move(self, action):
+
+    def move(self, action:int):
         
         clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
         idx = clock_wise.index(self.direction)
 
-        if np.array_equal(action, [1, 0, 0]):
-            new_dir = clock_wise[idx] # no change
-        elif np.array_equal(action, [0, 1, 0]):
-            next_idx = (idx + 1) % 4
-            new_dir = clock_wise[next_idx] # right turn r -> d -> l -> u
-        else: # [0, 0, 1]
+        # 0 = Straight,    1 = Left,   2 = Right
+        if action == 0:
+            new_dir = clock_wise[idx]
+            self.snake.move(new_dir, self.food)
+        elif action == 1:
             next_idx = (idx - 1) % 4
-            new_dir = clock_wise[next_idx] # left turn r -> u -> l -> d
-
+            new_dir = clock_wise[next_idx]
+            self.snake.move(new_dir, self.food)
+        elif action == 2:
+            next_idx = (idx + 1) % 4
+            new_dir = clock_wise[next_idx]
+            self.snake.move(new_dir, self.food)
+        
         self.direction = new_dir
-        self.snake.move(self.direction, self.food)
+
         
     def step(self, action):
         self.frame_iteration += 1
@@ -128,22 +148,24 @@ class SnakeGame:
         # 3. Check if game over
         reward = 0
         game_over = False
-        if self.is_collision() or self.frame_iteration > 200*len(self.snake.body):
+        if self.is_collision() or self.frame_iteration > 300*len(self.snake.body):
             print("Collision")
             game_over = True
             reward = -10
-            return reward, game_over, self.score
+            return self.state, reward, game_over, self.score
 
         # 4. Place new food or just move
         if self.snake.head == self.food:
             # print("ate food")
             self.score += 1
             reward = 10
-            self.place_food()
+            if not self.score == (self.w * self.h -3):
+                self.place_food()
         else:
             # We remove last element in list because the snake didn't get longer
             pass
         
+        self.update_state()
 
         # 5. Update ui
         if self.render:
@@ -168,7 +190,7 @@ class SnakeGame:
             # print(manhattan)
             abcd = 10
     
-        return reward, game_over, self.score
+        return self.state, reward, game_over, self.score
 
     def render_ui(self):
         modifier = self.render_size_modifier

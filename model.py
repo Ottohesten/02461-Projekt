@@ -6,26 +6,26 @@ import os
 import numpy as np
 from HelperClasses import drawnow
 
-class Linear_QNet(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super().__init__()
-        self.linear1 = nn.Linear(input_size, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, hidden_size)
-        self.linear3 = nn.Linear(hidden_size, output_size)
+# class Linear_QNet(nn.Module):
+#     def __init__(self, input_size, hidden_size, output_size):
+#         super().__init__()
+#         self.linear1 = nn.Linear(input_size, hidden_size)
+#         self.linear2 = nn.Linear(hidden_size, hidden_size)
+#         self.linear3 = nn.Linear(hidden_size, output_size)
 
-    def forward(self, x):
-        x = F.relu(self.linear1(x))
-        x = F.relu(self.linear2(x))
-        x = self.linear3(x)
-        return x
+#     def forward(self, x):
+#         x = F.relu(self.linear1(x))
+#         x = F.relu(self.linear2(x))
+#         x = self.linear3(x)
+#         return x
 
-    def save(self, file_name='model.pth'):
-        model_folder_path = './model'
-        if not os.path.exists(model_folder_path):
-            os.makedirs(model_folder_path)
+#     def save(self, file_name='model.pth'):
+#         model_folder_path = './model'
+#         if not os.path.exists(model_folder_path):
+#             os.makedirs(model_folder_path)
 
-        file_name = os.path.join(model_folder_path, file_name)
-        torch.save(self.state_dict(), file_name)
+#         file_name = os.path.join(model_folder_path, file_name)
+#         torch.save(self.state_dict(), file_name)
 
 
 class QTrainer:
@@ -78,6 +78,14 @@ class QTrainer:
 
 # Convolutional section
 
+Linear_QNet = lambda input_size, hidden_size, output_size : nn.Sequential(
+    torch.nn.Linear(input_size, hidden_size),
+    torch.nn.ReLU(),
+    torch.nn.Linear(hidden_size, hidden_size),
+    torch.nn.ReLU(),
+    torch.nn.Linear(hidden_size, output_size)
+)
+
 Conv_QNet = lambda : nn.Sequential(
     torch.nn.Conv2d(4, 32, (3,3)),
     torch.nn.ReLU(),
@@ -85,11 +93,36 @@ Conv_QNet = lambda : nn.Sequential(
     torch.nn.Conv2d(32, 64, (2,2)),
     torch.nn.ReLU(),
     torch.nn.Flatten(),
-    torch.nn.Linear(64*3*3,64*2*2), # for 10x10 grid
+    torch.nn.Linear(64*3*3,64*2*2),
     torch.nn.ReLU(),
-    torch.nn.Linear(64*2*2,4), # for 10x10 grid
-    # torch.nn.Linear(channels_out*3*3,3), # for 20x20 grid
+    torch.nn.Linear(64*2*2,4),
 )
+
+Conv_QNet_5x5 = lambda : nn.Sequential(
+    torch.nn.Conv2d(4, 32, (3,3)),
+    torch.nn.ReLU(),
+    torch.nn.Flatten(),
+    torch.nn.Linear(32*3*3,32*2*2),
+    torch.nn.ReLU(),
+    torch.nn.Linear(32*2*2,4),
+)
+
+Conv_QNet_20x20 = lambda : nn.Sequential(
+    torch.nn.Conv2d(4, 32, (3,3)),
+    torch.nn.ReLU(),
+    torch.nn.MaxPool2d((2, 2)),
+    torch.nn.Conv2d(32, 64, (2,2)),
+    torch.nn.ReLU(),
+    torch.nn.Flatten(),
+    torch.nn.Linear(64*8*8,64*2*2),
+    torch.nn.ReLU(),
+    torch.nn.Linear(64*2*2,4),
+)
+
+
+
+
+
 
 
 class ConvQtrainer:

@@ -5,15 +5,12 @@ import pandas as pd
 from collections import deque
 from SnakeGameClass_4Directions import SnakeGame, Direction, Point
 # from Solution import SnakeGameAI, Direction, Point
-from model import Conv_QNet
+from model import Conv_QNet, Conv_QNet_20x20, Conv_QNet_5x5
 from HelperClasses import Board
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 MAX_MEMORY = 50_000
 BATCH_SIZE = 32
-
 LR = 0.001
 
 class Agent:
@@ -25,11 +22,11 @@ class Agent:
         self.nframes = 4
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Conv_QNet()
+        # self.model = Conv_QNet()
+        self.model = Conv_QNet_5x5()
         # self.model.load_state_dict(torch.load("saved_models/highest_trained.pth"))
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=LR)
         self.loss = torch.nn.MSELoss()
-        # self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
     def get_state(self, game):
@@ -49,18 +46,16 @@ class Agent:
     def get_predicted_action(self, state):
         state0 = torch.tensor(state, dtype=torch.float).unsqueeze(0)
         prediction = self.model(state0)
-        # print(prediction)
         move = torch.argmax(prediction).item()
         return move
     
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
         self.epsilon = self.epsilon_start - self.epsilon_step*self.n_games
-        if random.uniform(0, 1) < max(self.epsilon,0.005):
+        if random.uniform(0, 1) < max(self.epsilon,0.01):
             move = self.get_random_action()
         else:
             move = self.get_predicted_action(state)
-            # print(move)
         return move
     
     def get_init_states(self, env):
@@ -106,14 +101,11 @@ class Agent:
         
 
 def train():
-    scores = []
-    mean_scores = []
-    total_score = 0
     record = 0
     agent = Agent()
     env = SnakeGame()
     model_filepath = "saved_models/"
-    data_filepath = "data/conv_score_data.csv"
+    data_filepath = "data/conv_score_data_5x5.csv"
 
     while True:
         env.reset()
@@ -124,6 +116,7 @@ def train():
 
 
         while not done:
+
             # Get an action that is either random or prediced based on epsilon
             action = agent.get_action(current_state)
 
@@ -151,7 +144,7 @@ def train():
 
             if score > record:
                 record = score
-                torch.save(agent.model.state_dict(), f"{model_filepath}highest_performer.pth")  # Save the model which has gotten the highest score during the training session
+                # torch.save(agent.model.state_dict(), f"{model_filepath}highest_performer.pth")  # Save the model which has gotten the highest score during the training session
             
             if done:
                 with open(data_filepath, "a") as data_file:
@@ -161,28 +154,23 @@ def train():
 
                 print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}\t epsilon: {agent.epsilon}")
                 if agent.n_games % 100 == 0:
-                    torch.save(agent.model.state_dict(), f"{model_filepath}highest_trained.pth") # Save the model every 100 games
+                    # torch.save(agent.model.state_dict(), f"{model_filepath}highest_trained.pth") # Save the model every 100 games
                     # data.to_csv("data/Data_no_illegal_action3.csv")
                     pass
                 if agent.n_games == 1000:
-                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_1000.pth")
+                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_5x5_1000.pth")
                 if agent.n_games == 10000:
-                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_10000.pth")
+                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_5x5_10000.pth")
                 if agent.n_games == 25000:
-                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_25000.pth")
+                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_5x5_25000.pth")
                 if agent.n_games == 50000:
-                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_50000.pth")
+                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_5x5_50000.pth")
 
             
 
 
-
-
 # TEST THE MODEL BY LOADING IT IN FROM FILE AND NOT TRAINING IT WHILE RUNNING
 def test():
-    plot_scores = []
-    plot_mean_scores = []
-    total_score = 0
     record = 0
     agent = Agent()
     env = SnakeGame()

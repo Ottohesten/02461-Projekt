@@ -66,7 +66,7 @@ class Snake:
 
 
 class Board:
-    def __init__(self, width:int, height:int, snake:Snake, food:Point=None):
+    def __init__(self, width:int, height:int, snake:Snake=None, food:Point=None):
         self.width = width
         self.height = height
         self.food = food
@@ -168,7 +168,7 @@ class Board:
         straight = clock_wise[idx]
         right_turn = clock_wise[(idx+1)%4]
         left_turn = clock_wise[(idx-1)%4]
-        available_space = {straight: self.get_available_space_direction(straight), right_turn: self.get_available_space_direction(right_turn), left_turn: self.get_available_space_direction(left_turn) }
+        available_space = {straight: self.get_available_space_direction(straight), left_turn: self.get_available_space_direction(left_turn), right_turn: self.get_available_space_direction(right_turn) }
         return available_space
 
     def manhattan_distance(self, direction, food):
@@ -195,7 +195,7 @@ class Board:
         right_turn = clock_wise[(idx+1)%4]
         left_turn = clock_wise[(idx-1)%4]
 
-        distances = {straight: self.manhattan_distance(straight, food), right_turn: self.manhattan_distance(right_turn, food), left_turn: self.manhattan_distance(left_turn, food)}
+        distances = {straight: self.manhattan_distance(straight, food), left_turn: self.manhattan_distance(left_turn, food), right_turn: self.manhattan_distance(right_turn, food)}
         return distances
 
     def to_tensor(self, channels=3):
