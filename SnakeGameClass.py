@@ -7,7 +7,7 @@ from HelperClasses import Direction, Point, Board, Snake
 pygame.init()
 font = pygame.font.SysFont('times new roman', 25)
 
-CLOCK_SPEED = 200
+CLOCK_SPEED = 1000
 BLOCK_SIZE = 20
 
 WIDTH = 10
@@ -25,7 +25,7 @@ class SnakeGame:
     def __init__(self, w=WIDTH, h=HEIGHT):
         self.w = w
         self.h = h
-        self.render_size_modifier = 1000//HEIGHT
+        self.render_size_modifier = 1000//self.w
         self.display = pygame.display.set_mode((1000, 1000))
         pygame.display.set_caption('Snake')
         self.clock = pygame.time.Clock()
@@ -148,7 +148,7 @@ class SnakeGame:
         # 3. Check if game over
         reward = 0
         game_over = False
-        if self.is_collision() or self.frame_iteration > 300*len(self.snake.body):
+        if self.is_collision() or self.frame_iteration > 100*len(self.snake.body):
             print("Collision")
             game_over = True
             reward = -10

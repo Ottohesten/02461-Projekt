@@ -10,8 +10,8 @@ font = pygame.font.SysFont('times new roman', 25)
 CLOCK_SPEED = 200
 BLOCK_SIZE = 20
 
-WIDTH = 5
-HEIGHT = 5
+WIDTH = 20
+HEIGHT = 20
 
 
 BLACK = pygame.Color(0, 0, 0)
@@ -25,7 +25,7 @@ class SnakeGame:
     def __init__(self, w=WIDTH, h=HEIGHT):
         self.w = w
         self.h = h
-        self.render_size_modifier = 1000//HEIGHT
+        self.render_size_modifier = 1000//self.h
         self.display = pygame.display.set_mode((1000, 1000))
         pygame.display.set_caption('Snake')
         self.clock = pygame.time.Clock()
@@ -143,7 +143,7 @@ class SnakeGame:
         reward = - 0.03
         # reward = - 0.5
         game_over = False
-        if self.is_collision() or self.frame_iteration > 300*len(self.snake.body):
+        if self.is_collision() or self.frame_iteration > 150*len(self.snake.body):
             print("Collision")
             game_over = True
             reward = - 2.0

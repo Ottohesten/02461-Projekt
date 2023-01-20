@@ -14,13 +14,17 @@ LR = 0.001
 
 class Agent:
 
-    def __init__(self):
+    def __init__(self, model=None):
         self.n_games = 0
         self.epsilon_start = 1 # randomness
         self.epsilon_step = 0.0001
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(11, 32, 3)
+        if model is not None:
+            self.model = model
+            print("loaded in model")
+        else:
+            self.model = Linear_QNet(11, 32, 3)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=LR)
         self.loss = torch.nn.MSELoss()
 
@@ -162,9 +166,62 @@ def train():
 
 
 
+def test():
+    record = 0
+    grid_size = 20
+    
+    model_type = "pre"
+    model = Linear_QNet(11, 32, 3)
+    trained_for = 10000
+    
+    
+    model.load_state_dict(torch.load(f"saved_models/{str(model_type)}_{str(grid_size)}x{str(grid_size)}_{str(trained_for)}.pth"))
+    agent = Agent(model)
+    env = SnakeGame(grid_size,grid_size)
+    data_filepath = f"data/tests/{str(model_type)}_{str(grid_size)}x{str(grid_size)}_{str(trained_for)}_data.csv"
+    
+    with open(data_filepath, "a+") as data_file:
+                    data_file.write(f"{str(model_type)}_{str(grid_size)}x{str(grid_size)}_{str(trained_for)}")
+
+
+    while True:
+        # Get initial state
+        env.reset()
+        done = False
+        agent.n_games += 1
+
+        # Process the state into the values we cant to pass to the network
+        processed_state = agent.process_state(env)
+        while not done:
+
+            # Get action
+            action = agent.get_predicted_action(processed_state)
+
+            # Get the new state
+            next_state, reward, done, score = env.step(action=action)
+
+            processed_next_state = agent.process_state(env)
+
+            processed_state = processed_next_state
+
+            if score > record:
+                record = score
+
+
+            if done:
+                with open(data_filepath, "a") as data_file:
+                        data_file.write("\n")
+                        data_file.write(str(score))
+                        pass
+                if agent.n_games == 1000:
+                    quit()
+                print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}")
+    
+
 
 
 
 if __name__ == '__main__':
-    train()
+    # train()
+    test()
     pass

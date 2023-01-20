@@ -15,7 +15,7 @@ LR = 0.001
 
 class Agent:
 
-    def __init__(self):
+    def __init__(self, model=None):
         self.n_games = 0
         self.epsilon_start = 1 # randomness
         self.epsilon_step = 0.0001
@@ -23,8 +23,12 @@ class Agent:
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         # self.model = Conv_QNet()
-        self.model = Conv_QNet_5x5()
-        # self.model.load_state_dict(torch.load("saved_models/highest_trained.pth"))
+        if model is not None:
+            self.model = model
+            print("loaded in model")
+        else:
+            self.model = Conv_QNet_20x20()
+            # self.model.load_state_dict(torch.load("saved_models/conv_5x5_1000.pth"))
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=LR)
         self.loss = torch.nn.MSELoss()
 
@@ -105,7 +109,7 @@ def train():
     agent = Agent()
     env = SnakeGame()
     model_filepath = "saved_models/"
-    data_filepath = "data/conv_score_data_5x5.csv"
+    data_filepath = "data/conv_score_data_20x20.csv"
 
     while True:
         env.reset()
@@ -158,13 +162,13 @@ def train():
                     # data.to_csv("data/Data_no_illegal_action3.csv")
                     pass
                 if agent.n_games == 1000:
-                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_5x5_1000.pth")
+                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_20x20_1000.pth")
                 if agent.n_games == 10000:
-                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_5x5_10000.pth")
+                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_20x20_10000.pth")
                 if agent.n_games == 25000:
-                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_5x5_25000.pth")
+                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_20x20_25000.pth")
                 if agent.n_games == 50000:
-                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_5x5_50000.pth")
+                    torch.save(agent.model.state_dict(), f"{model_filepath}conv_20x20_50000.pth")
 
             
 
@@ -172,15 +176,26 @@ def train():
 # TEST THE MODEL BY LOADING IT IN FROM FILE AND NOT TRAINING IT WHILE RUNNING
 def test():
     record = 0
-    agent = Agent()
-    env = SnakeGame()
+    grid_size = 20
+    
+    model_type = "conv"
+    model = Conv_QNet_20x20()
+    trained_for = 30000
+    
+    
+    model.load_state_dict(torch.load(f"saved_models/{str(model_type)}_{str(grid_size)}x{str(grid_size)}_{str(trained_for)}.pth"))
+    agent = Agent(model)
+    env = SnakeGame(grid_size,grid_size)
+    data_filepath = f"data/tests/{str(model_type)}_{str(grid_size)}x{str(grid_size)}_{str(trained_for)}_data.csv"
+    
+    with open(data_filepath, "a+") as data_file:
+                    data_file.write(f"{str(model_type)}_{str(grid_size)}x{str(grid_size)}_{str(trained_for)}")
 
 
     while True:
         env.reset()
         current_state, next_state = agent.get_init_states(env)
         done = False
-        
         agent.n_games += 1
 
         while not done:
@@ -203,30 +218,14 @@ def test():
                 record = score
 
             if done:
+                with open(data_filepath, "a") as data_file:
+                    data_file.write("\n")
+                    data_file.write(str(score))
+                    pass
+                if agent.n_games == 1000:
+                    quit()
                 print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}")
         
-        # if agent.n_games > 1000:
-        #     abcd = 10
-        # if done:
-        #     # train long memory, plot result
-        #     game.reset()
-        #     state = agent.get_first_state(game)
-        #     agent.n_games += 1
-        #     # agent.train_long_memory()
-
-        #     if score > record:
-        #         record = score
-        #         agent.model.save("tf_model")
-
-        #     # print('Game', agent.n_games, 'Score', score, 'Record:', record)
-        #     print(f"Game: {agent.n_games}\t Score: {score}\t Record: {record}")
-
-        #     plot_scores.append(score)
-        #     total_score += score
-        #     mean_score = total_score / agent.n_games
-        #     plot_mean_scores.append(mean_score)
-        #     # plot(plot_scores, plot_mean_scores)
-
 if __name__ == '__main__':
     train()
     # test()
